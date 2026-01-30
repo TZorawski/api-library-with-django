@@ -70,6 +70,9 @@ Para acessar os serviços de livros, usuários e empréstimos da API utilize as 
 >{{url_servidor}}/library/users/
 >{{url_servidor}}/library/loans/
 
+Para ver a documentação completa, acesse:
+>{{url_servidor}}/api/schema/swagger-ui
+
 ####Exemplos:
 Para listar todos os livros:
 - Utilize o método GET
