@@ -42,7 +42,7 @@ class Loan(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def is_active(self) -> bool:
-        return self.returned_at is None
+        return self.returned_date is None
     
     def __str__(self) -> str:
         return f"Loan {self.id} - {self.book.title}"
