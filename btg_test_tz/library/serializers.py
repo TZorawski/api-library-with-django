@@ -13,11 +13,6 @@ class BookSerializer(serializers.ModelSerializer):
             "isbn",
             "total_copies"
         ]
-
-        def validate_isbn(self, value):
-            if len(value)<10:
-                raise serializers.ValidationError("ISBN invalid.")
-            return value
         
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
