@@ -10,7 +10,7 @@ class BookListCreateView(APIView):
     def get(self, request):
         books = Book.objects.all()
         serializer = BookSerializer(books, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
     def post(self, request):
         serializer = BookSerializer(data=request.data)
@@ -51,11 +51,21 @@ class BookEditDetailView(APIView):
     #    book.delete()
     #    return Response({"detail: Book successfully deleted"}, status=status.HTTP_204_NO_CONTENT)
 
+class BookAvailabilityView(APIView):
+    def get(self, request, id):
+        book = get_object_or_404(Book, id=id)
+        loans = book.loans.filter(returned_date__isnull=True).count()
+        
+        if loans < book.total_copies:
+            return Response("The book is available to loan.", status=status.HTTP_200_OK)
+
+        return Response("The book is not available to loan.", status=status.HTTP_200_OK)
+
 class UserListCreateView(APIView):
     def get(self, request):
         users = User.objects.all()
         serializer = UserSerializer(users, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
     def post(self, request):
         serializer = UserSerializer(data=request.data)
@@ -96,11 +106,17 @@ class UserEditDetailView(APIView):
     #    user.delete()
     #    return Response({"detail: User successfully deleted"}, status=status.HTTP_204_NO_CONTENT)
 
+class UserLoansListView(APIView):
+    def get(self, request, id):
+        loans = get_object_or_404(User, id=id).loans
+        serializer = LoanSerializer(loans, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 class LoanListCreateView(APIView):
     def get(self, request):
         loans = Loan.objects.all()
         serializer = LoanSerializer(loans, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
     def post(self, request):
         serializer = LoanCreateSerializer(data=request.data)
@@ -112,29 +128,31 @@ class LoanListCreateView(APIView):
         try:
             loan = CreateLoanService().execute(user=user, book=book)
         except Exception as e:
-            return Response(
-                {"detail": str(e)},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(
-        LoanSerializer(loan).data,
-        status=status.HTTP_201_CREATED,
-        )
+        return Response(LoanSerializer(loan).data, status=status.HTTP_201_CREATED)
+    
+class LoanActivetedList(APIView):
+    def get(self, request):
+        loans = Loan.objects.filter(returned_date__isnull=True)
+        serializer = LoanSerializer(loans, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 class LoanReturnView(APIView):
     def post(self, request, loan_id: int):
         loan = get_object_or_404(Loan, id=loan_id)
+        fine = 0.0
 
         try:
-            loan = ReturnLoanService().execute(loan=loan)
+            fine = ReturnLoanService().execute(loan=loan)
         except Exception as e:
-            return Response(
-                {"detail": str(e)},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(
-            LoanSerializer(loan).data,
-            status=status.HTTP_200_OK,
-        )
+        return Response({"fine": fine}, status=status.HTTP_200_OK)
+
+class LoanListByUserView(APIView):
+    def get(self, request, id):
+        user = get_object_or_404(User, id=id)
+        loans = Loan.objects.filter(user=user)
+        serializer = LoanSerializer(loans, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

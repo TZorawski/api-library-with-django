@@ -39,7 +39,7 @@ class ReturnLoanService:
         self.domain = LoanDomainService()
 
     #@transaction.atomic
-    def execute(self, *, loan: Loan) -> Loan:
+    def execute(self, *, loan: Loan) -> int:
         if loan.returned_date:
             raise LoanAlreadyReturned()
 
@@ -55,4 +55,4 @@ class ReturnLoanService:
         # Se quiser: persistir multa no futuro
         loan.fine_amount = fine if hasattr(loan, "fine_amount") else None
 
-        return loan
+        return fine
