@@ -23,14 +23,17 @@ Nessa camada foram absorvidas as camadas de serviços do domínio e de aplicaç�
 ### Camada de Interface
 É nessa camada onde está a interface de comunicação da API. Ela trata as chamadas e respostas. Está dividida entre os arquivos views.py e serializers.py.
 
-##Instruções de instalação e execução
+## Instruções de instalação e execução
 1. Clonar o repositório
 >git clone https://github.com/TZorawski/api-library-with-django.git
+
 >cd btg_test_tz
 
 2. Criar ambiente virtual
 >python -m venv venv
+
 >source venv/bin/activate  # Linux/Mac
+
 >venv\Scripts\activate     # Windows
 
 3. Instalar dependências
@@ -43,37 +46,39 @@ Nessa camada foram absorvidas as camadas de serviços do domínio e de aplicaç�
 >python manage.py runserver
 
 ## Funcionalidades implementadas:
-####Livros:
+#### Livros:
 - Listar todos os livros
 - Ver detalhes de um livro
 - Ver disponibilidade de um livro
 - Cadastrar um livro
 - Editar um livro
 
-####Usuários:
+#### Usuários:
 - Listar todos os usuários
 - Ver detalhes de um usuário
 - Listar o histórico de empréstimo de um usuário
 - Cadastrar um usuário
 - Editar um usuário
 
-####Empréstimos:
+#### Empréstimos:
 - Listar todos os empréstimos
 - Listar todos os empréstimos ativos/atrasados
 - Listar todos os empréstimo de um usuário
 - Fazer empréstimo de um livro
 - Fazer a devolução de um empréstimo
 
-##Exemplos de uso da API:
+## Exemplos de uso da API:
 Para acessar os serviços de livros, usuários e empréstimos da API utilize as rotas:
 >{{url_servidor}}/library/books/
+
 >{{url_servidor}}/library/users/
+
 >{{url_servidor}}/library/loans/
 
 Para ver a documentação completa, acesse:
 >{{url_servidor}}/api/schema/swagger-ui
 
-####Exemplos:
+#### Exemplos:
 Para listar todos os livros:
 - Utilize o método GET
 >{{url_servidor}}/library/books/
