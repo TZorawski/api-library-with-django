@@ -13,7 +13,23 @@ class BookSerializer(serializers.ModelSerializer):
             "isbn",
             "total_copies"
         ]
-        
+
+class BookCreateSerializer(serializers.Serializer):
+    title = serializers.CharField()
+    author = serializers.CharField()
+    publication_year = serializers.IntegerField()
+    edition = serializers.IntegerField(required=False, allow_null=True)
+    isbn = serializers.CharField()
+    total_copies = serializers.IntegerField()
+
+class BookUpdateSerializer(serializers.Serializer):
+    title = serializers.CharField(required=False)
+    author = serializers.CharField(required=False)
+    publication_year = serializers.IntegerField(required=False)
+    edition = serializers.IntegerField(required=False, allow_null=True)
+    isbn = serializers.CharField(required=False)
+    total_copies = serializers.IntegerField(required=False)
+    
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -23,6 +39,16 @@ class UserSerializer(serializers.ModelSerializer):
             "cpf",
             "email"
         ]
+
+class UserCreateSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    email = serializers.CharField()
+    cpf = serializers.CharField()
+
+class UserUpdateSerializer(serializers.Serializer):
+    name = serializers.CharField(required=False)
+    email = serializers.CharField(required=False)
+    cpf = serializers.CharField(required=False)
 
 class LoanSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)

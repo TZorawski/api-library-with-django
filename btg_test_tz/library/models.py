@@ -5,9 +5,9 @@ class Book(models.Model):
     title = models.CharField(max_length=255)
     author = models.CharField(max_length=255)
     publication_year = models.IntegerField()
-    edition = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(0)])
-    isbn = models.CharField(max_length=13, unique=True, validators=[MinLengthValidator(10)])
-    total_copies = models.IntegerField(validators=[MinValueValidator(0)])
+    edition = models.IntegerField(null=True, blank=True)
+    isbn = models.CharField(max_length=13, unique=True)
+    total_copies = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -17,7 +17,7 @@ class Book(models.Model):
 class User(models.Model):
     name = models.CharField(max_length=255)
     email = models.EmailField(max_length=254)
-    cpf = models.CharField(max_length=11, unique=True, validators=[MinLengthValidator(11)])
+    cpf = models.CharField(max_length=11, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

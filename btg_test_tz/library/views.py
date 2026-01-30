@@ -3,48 +3,76 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from .models import Book, User, Loan
-from .serializers import BookSerializer, UserSerializer, LoanSerializer, LoanCreateSerializer
-from .services import CreateLoanService, ReturnLoanService
+from .serializers import BookSerializer, BookCreateSerializer, BookUpdateSerializer, UserSerializer, UserCreateSerializer, UserUpdateSerializer, LoanSerializer, LoanCreateSerializer
+from .services import BookService, UserService, CreateLoanService, ReturnLoanService
+from pydantic import ValidationError
+
+def format_pydantic_errors(e):
+    errors_formatted = {}
+    for error in e.errors():
+        field = error['loc'][0]
+        errors_formatted[field] = [error['msg']]
+        
+    return errors_formatted
 
 class BookListCreateView(APIView):
     def get(self, request):
-        books = Book.objects.all()
-        serializer = BookSerializer(books, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        books = BookService.list_books()
+        return Response(BookSerializer(books, many=True).data, status=status.HTTP_200_OK)
     
     def post(self, request):
-        serializer = BookSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        serializer = BookCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            book = BookService.create_book(serializer.validated_data)
+        except ValidationError as e:
+            errors_formatted = format_pydantic_errors(e)
+            return Response(
+                errors_formatted,
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            BookSerializer(book).data,
+            status=status.HTTP_201_CREATED,
+        )
     
 class BookEditDetailView(APIView):
-    def get(self, request, id):
-        book = get_object_or_404(Book, id=id)
-        serializer = BookSerializer(book)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    def get(self, request, id: int):
+        book = BookService.get_book(book_id=id)
+        return Response(BookSerializer(book).data, status=status.HTTP_200_OK)
 
-    def put(self, request, id):
-        book = get_object_or_404(Book, id=id)
-        serializer = BookSerializer(book, data=request.data)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    #def put(self, request, id: int):
+    #    serializer = BookUpdateSerializer(data=request.data, partial=True)
+    #    serializer.is_valid(raise_exception=True)
+    #
+    #    if serializer.is_valid():
+    #        serializer.save()
+    #        return Response(serializer.data, status=status.HTTP_200_OK)
+    #
+    #    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    def patch(self, request, id):
-        book = get_object_or_404(Book, id=id)
-        serializer = BookSerializer(book, data=request.data, partial=True)
+    def patch(self, request, id: int):
+        serializer = BookUpdateSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
 
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
+        try:
+            book = BookService.update_book(
+                book_id=id,
+                data=serializer.validated_data,
+            )
+        except ValidationError as e:
+            errors_formatted = format_pydantic_errors(e)
+            return Response(
+                errors_formatted,
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            BookSerializer(book).data,
+            status=status.HTTP_200_OK,
+        )
     
     #def delete(self, request, id):
     #    book = get_object_or_404(Book, id=id)
@@ -53,53 +81,68 @@ class BookEditDetailView(APIView):
 
 class BookAvailabilityView(APIView):
     def get(self, request, id):
-        book = get_object_or_404(Book, id=id)
-        loans = book.loans.filter(returned_date__isnull=True).count()
-        
-        if loans < book.total_copies:
-            return Response("The book is available to loan.", status=status.HTTP_200_OK)
+        is_available = BookService.book_is_available(book_id=id)
 
-        return Response("The book is not available to loan.", status=status.HTTP_200_OK)
+        return Response(is_available, status=status.HTTP_200_OK)
 
 class UserListCreateView(APIView):
     def get(self, request):
-        users = User.objects.all()
-        serializer = UserSerializer(users, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        users = UserService.list_users()
+        return Response(UserSerializer(users, many=True).data, status=status.HTTP_200_OK)
     
     def post(self, request):
-        serializer = UserSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        serializer = UserCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            user = UserService.create_user(serializer.validated_data)
+        except ValidationError as e:
+            errors_formatted = format_pydantic_errors(e)
+            return Response(
+                errors_formatted,
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            UserSerializer(user).data,
+            status=status.HTTP_201_CREATED,
+        )
     
 class UserEditDetailView(APIView):
-    def get(self, request, id):
-        user = get_object_or_404(User, id=id)
-        serializer = UserSerializer(user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    def get(self, request, id: int):
+        user = UserService.get_user(user_id=id)
+        return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
 
-    def put(self, request, id):
-        user = get_object_or_404(User, id=id)
-        serializer = UserSerializer(user, data=request.data)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    #def put(self, request, id):
+    #    user = get_object_or_404(User, id=id)
+    #    serializer = UserSerializer(user, data=request.data)
+    #
+    #    if serializer.is_valid():
+    #        serializer.save()
+    #        return Response(serializer.data, status=status.HTTP_200_OK)
+    #
+    #    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     def patch(self, request, id):
-        user = get_object_or_404(User, id=id)
-        serializer = UserSerializer(user, data=request.data, partial=True)
+        serializer = UserUpdateSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
 
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
+        try:
+            user = UserService.update_user(
+                user_id=id,
+                data=serializer.validated_data,
+            )
+        except ValidationError as e:
+            errors_formatted = format_pydantic_errors(e)
+            return Response(
+                errors_formatted,
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            UserSerializer(user).data,
+            status=status.HTTP_200_OK,
+        )
     
     #def delete(self, request, id):
     #    user = get_object_or_404(User, id=id)
@@ -108,9 +151,8 @@ class UserEditDetailView(APIView):
 
 class UserLoansListView(APIView):
     def get(self, request, id):
-        loans = get_object_or_404(User, id=id).loans
-        serializer = LoanSerializer(loans, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        loans = UserService.list_user_loans(user_id=id)
+        return Response(LoanSerializer(loans, many=True).data, status=status.HTTP_200_OK)
 
 class LoanListCreateView(APIView):
     def get(self, request):
