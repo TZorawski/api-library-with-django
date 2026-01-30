@@ -100,3 +100,7 @@ class UserUpdateSchema(BaseModel):
         if not value.isdigit():
             raise ValueError("CPF must contain only numbers")
         return value
+    
+class LoanCreateSchema(BaseModel):
+    user_id: int = Field(ge=0)
+    book_id: int = Field(ge=0)

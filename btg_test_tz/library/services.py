@@ -2,8 +2,8 @@ from .domain import LoanDomainService
 from .models import Book, User, Loan
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
-from .exceptions import BookUnavailable, LoanAlreadyReturned
-from .validations import BookCreateSchema, BookUpdateSchema, UserCreateSchema, UserUpdateSchema
+from .exceptions import BookUnavailable, LoanAlreadyReturned, ISBNAlredyExists, CPFAlredyExists
+from .validations import BookCreateSchema, BookUpdateSchema, UserCreateSchema, UserUpdateSchema, LoanCreateSchema
 
 class BookService:
     @staticmethod
@@ -28,6 +28,10 @@ class BookService:
     #@transaction.atomic
     def create_book(data: dict) -> Book:
         validated_data = BookCreateSchema(**data)
+
+        isbn_exists = Book.objects.filter(isbn=validated_data.isbn).exists()
+        if isbn_exists:
+            raise ISBNAlredyExists()
 
         book = Book.objects.create(
             title=validated_data.title,
@@ -70,6 +74,10 @@ class UserService:
     def create_user(data: dict) -> User:
         validated_data = UserCreateSchema(**data)
 
+        cpf_exists = User.objects.filter(cpf=validated_data.cpf).exists()
+        if cpf_exists:
+            raise CPFAlredyExists()
+
         user = User.objects.create(
             name=validated_data.name,
             email=validated_data.email,
@@ -90,12 +98,28 @@ class UserService:
         user.save()
         return user
 
-class CreateLoanService:
-    def __init__(self):
-        self.domain = LoanDomainService()
+class LoanService:
+    @staticmethod
+    def list_loans() -> Loan:
+        return Loan.objects.all()
+    
+    @staticmethod
+    def list_actives_loans() -> Loan:
+        return Loan.objects.filter(returned_date__isnull=True)
+    
+    @staticmethod
+    def list_loans_by_user(user_id: int) -> Loan:
+        user = get_object_or_404(User, id=user_id)
+        return Loan.objects.filter(user=user)
 
     #@transaction.atomic
-    def execute(self, *, user, book) -> Loan:
+    @staticmethod
+    def create_loan(data: dict) -> Loan:
+        validated_data = LoanCreateSchema(**data)
+
+        user = get_object_or_404(User, id=validated_data.user_id)
+        book = get_object_or_404(Book, id=validated_data.book_id)
+
         book_active_loans_count = Loan.objects.filter(
             book=book,
             returned_date__isnull=True
@@ -109,9 +133,10 @@ class CreateLoanService:
             returned_date__isnull=True
         ).count()
 
-        self.domain.validate_user_can_loan(user_active_loans_count)
+        domain = LoanDomainService()
+        domain.validate_user_can_loan(user_active_loans_count)
 
-        due_date = self.domain.calculate_due_date()
+        due_date = domain.calculate_due_date()
 
         loan = Loan.objects.create(
             user=user,
@@ -120,26 +145,23 @@ class CreateLoanService:
         )
 
         return loan
-
-class ReturnLoanService:
-    def __init__(self):
-        self.domain = LoanDomainService()
-
+    
     #@transaction.atomic
-    def execute(self, *, loan: Loan) -> int:
+    @staticmethod
+    def return_loan(loan_id: int) -> int:
+        loan = get_object_or_404(Loan, id=loan_id)
+
         if loan.returned_date:
             raise LoanAlreadyReturned()
 
         returned_date = timezone.now().date()
-        fine = self.domain.calculate_fine(
+        domain = LoanDomainService()
+        fine = domain.calculate_fine(
             due_date=loan.due_date,
             returned_date=returned_date
         )
 
         loan.returned_date = returned_date
         loan.save(update_fields=["returned_date"])
-
-        # Se quiser: persistir multa no futuro
-        loan.fine_amount = fine if hasattr(loan, "fine_amount") else None
 
         return fine

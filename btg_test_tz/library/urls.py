@@ -22,6 +22,6 @@ urlpatterns = [
     path("users/user/<int:id>/loans", UserLoansListView.as_view()),
     path("loans/", LoanListCreateView.as_view()),
     path("loans/activated", LoanActivetedList.as_view()),
-    path("loans/return/<int:loan_id>", LoanReturnView.as_view()),
+    path("loans/return/<int:id>", LoanReturnView.as_view()),
     path("loans/user/<int:id>", LoanListByUserView.as_view()),
 ]
